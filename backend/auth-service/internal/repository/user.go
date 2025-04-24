@@ -1,43 +1,23 @@
 package repository
 
 import (
-	"gorm.io/gorm"
+	"auth-service/internal/config"
+	"auth-service/internal/models"
+	"fmt"
 )
 
-// User – модель пользователя
-type User struct {
-	gorm.Model
-	Email    string `gorm:"unique;not null"`
-	Password string `gorm:"not null"`
-}
+// CreateUser создает нового пользователя в базе данных
+func CreateUser(user *models.User) error {
+	query := `
+		INSERT INTO users (email, password_hash, created_at)
+		VALUES ($1, $2, NOW())
+		RETURNING id, created_at
+	`
 
-// UserRepository – интерфейс репозитория пользователей
-type UserRepository interface {
-	Create(user *User) error
-	FindByEmail(email string) (*User, error)
-}
-
-// userRepo – реализация репозитория
-type userRepo struct {
-	db *gorm.DB
-}
-
-// NewUserRepository – конструктор репозитория
-func NewUserRepository(db *gorm.DB) UserRepository {
-	return &userRepo{db: db}
-}
-
-// Create – добавление нового пользователя
-func (r *userRepo) Create(user *User) error {
-	return r.db.Create(user).Error
-}
-
-// FindByEmail – поиск пользователя по email
-func (r *userRepo) FindByEmail(email string) (*User, error) {
-	var user User
-	result := r.db.Where("email = ?", email).First(&user)
-	if result.Error != nil {
-		return nil, result.Error
+	err := config.DB.QueryRow(query, user.Email, user.Password).Scan(&user.ID, &user.CreatedAt)
+	if err != nil {
+		return fmt.Errorf("ошибка при создании пользователя: %w", err)
 	}
-	return &user, nil
+
+	return nil
 }
