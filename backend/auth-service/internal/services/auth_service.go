@@ -9,16 +9,16 @@ import (
 )
 
 // RegisterUser хеширует пароль и создает пользователя
-func RegisterUser(email, password string) (*models.User, error) {
+func RegisterUser(email, password, role string) (*models.User, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка хеширования пароля: %w", err)
 	}
 
 	user := &models.User{
-		Email:    input.Email,
+		Email:    email,
 		Password: string(hashedPassword),
-		Role:     input.Role,
+		Role:     role,
 	}
 
 	err = repository.CreateUser(user)

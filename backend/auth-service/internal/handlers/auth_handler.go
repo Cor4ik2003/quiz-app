@@ -2,8 +2,9 @@ package handlers
 
 import (
 	service "auth-service/internal/services"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type RegisterInput struct {
@@ -19,7 +20,7 @@ func RegisterHandler(c *gin.Context) {
 		return
 	}
 
-	user, err := service.RegisterUser(input.Email, input.Password)
+	user, err := service.RegisterUser(input.Email, input.Password, input.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
