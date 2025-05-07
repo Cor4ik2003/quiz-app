@@ -1,29 +1,30 @@
 version: '3.8'
 
 services:
-  db:
+  quiz-db:
     image: postgres:15
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: pass
-      POSTGRES_DB: auth_service_db
+      POSTGRES_DB: quiz_service_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - quiz_db_data:/var/lib/postgresql/data
 
-  auth-service:
+  quiz-service:
     build: .
-    depends_on:
-      - db
     ports:
-      - "8081:8081"
+      - "8082:8082"
+    depends_on:
+      - quiz-db
     environment:
-      DB_HOST: db
+      DB_HOST: quiz-db
+      DB_PORT: 5432
       DB_USER: postgres
       DB_PASSWORD: pass
-      DB_NAME: auth_service_db
+      DB_NAME: quiz_service_db
 
 volumes:
-  db_data:
+  quiz_db_data:

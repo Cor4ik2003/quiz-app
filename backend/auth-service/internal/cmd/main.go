@@ -18,6 +18,6 @@ func main() {
 
 	r.POST("/register", handlers.RegisterHandler)
 
-	log.Println("Auth service started on port 808")
+	log.Println("Auth service started on port 8081")
 	r.Run(":8081")
 }
