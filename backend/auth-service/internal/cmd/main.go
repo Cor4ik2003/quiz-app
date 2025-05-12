@@ -3,6 +3,7 @@ package main
 import (
 	"auth-service/internal/config"
 	"auth-service/internal/handlers"
+	"auth-service/internal/middleware"
 	"log"
 
 	"github.com/gin-gonic/gin"

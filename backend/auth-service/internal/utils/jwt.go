@@ -6,10 +6,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecret = []byte("your_secret_key") // поменяй на env-переменную в будущем
+var jwtSecret = []byte("your_secret_key")
 
 type Claims struct {
-	UserID string `json:"user_id"` // раньше было int
+	UserID string `json:"user_id"`
 	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
