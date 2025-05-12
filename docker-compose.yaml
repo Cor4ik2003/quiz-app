@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: auth_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: your_password
+      POSTGRES_DB: auth_service_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: auth_service
+    depends_on:
+      - postgres
+    ports:
+      - "8081:8081"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=your_password
+      - DB_NAME=auth_service_db
+    volumes:
+      - ./auth-service:/app
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: auth_frontend
+    ports:
+      - "4200:4200"
+    depends_on:
+      - auth-service
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm start
+
+volumes:
+  pgdata:

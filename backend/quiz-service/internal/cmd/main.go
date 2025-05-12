@@ -16,7 +16,7 @@ func main() {
 		case http.MethodGet:
 			handler.GetQuizzes(w, r)
 		case http.MethodPost:
-			handler.CreateQuiz(w, r)
+			handler.CreateQuizHandler(w, r)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}

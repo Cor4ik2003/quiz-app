@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"internal/internal/db"
+	"internal/internal/dto"
 )
 
 type Quiz struct {
@@ -11,11 +12,42 @@ type Quiz struct {
 	Description string `json:"description"`
 }
 
-func CreateQuiz(title, description string) (string, error) {
-	query := `INSERT INTO public.quizzes (title, description) VALUES ($1, $2) RETURNING id`
-	var id string
-	err := db.DB.QueryRow(context.Background(), query, title, description).Scan(&id)
-	return id, err
+func CreateQuizWithQuestions(title, description string, questions []dto.Question) (string, error) {
+	tx, err := db.DB.Begin(context.Background())
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback(context.Background())
+
+	var quizID string
+	err = tx.QueryRow(context.Background(),
+		`INSERT INTO quizzes (title, description) VALUES ($1, $2) RETURNING id`,
+		title, description).Scan(&quizID)
+	if err != nil {
+		return "", err
+	}
+
+	for _, q := range questions {
+		var questionID string
+		err = tx.QueryRow(context.Background(),
+			`INSERT INTO questions (quiz_id, text) VALUES ($1, $2) RETURNING id`,
+			quizID, q.Text).Scan(&questionID)
+		if err != nil {
+			return "", err
+		}
+
+		for _, a := range q.Answers {
+			_, err = tx.Exec(context.Background(),
+				`INSERT INTO answers (question_id, text, is_correct) VALUES ($1, $2, $3)`,
+				questionID, a.Text, a.IsCorrect)
+			if err != nil {
+				return "", err
+			}
+		}
+	}
+
+	err = tx.Commit(context.Background())
+	return quizID, err
 }
 
 func GetAllQuizzes() ([]Quiz, error) {

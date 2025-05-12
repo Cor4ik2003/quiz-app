@@ -22,3 +22,26 @@ func CreateUser(user *models.User) error {
 
 	return nil
 }
+
+func GetUserByEmail(email string) (*models.User, error) {
+	query := `
+		SELECT id, email, password_hash, role, created_at
+		FROM users
+		WHERE email = $1
+	`
+
+	var user models.User
+	err := config.DB.QueryRow(query, email).Scan(
+		&user.ID,
+		&user.Email,
+		&user.Password,
+		&user.Role,
+		&user.CreatedAt,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("ошибка при поиске пользователя по email: %w", err)
+	}
+
+	return &user, nil
+}

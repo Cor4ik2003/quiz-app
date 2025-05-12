@@ -13,6 +13,14 @@ type RegisterInput struct {
 	Role     string `json:"role" binding:"required,oneof=student teacher"`
 }
 
+func PassTestHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "Прохождение теста доступно студенту"})
+}
+
+func CreateTestHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "Создание теста доступно преподавателю"})
+}
+
 func RegisterHandler(c *gin.Context) {
 	var input RegisterInput
 	if err := c.ShouldBindJSON(&input); err != nil {

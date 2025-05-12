@@ -9,12 +9,12 @@ import (
 var jwtSecret = []byte("your_secret_key") // поменяй на env-переменную в будущем
 
 type Claims struct {
-	UserID int    `json:"user_id"`
+	UserID string `json:"user_id"` // раньше было int
 	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(userID int, role string) (string, error) {
+func GenerateToken(userID string, role string) (string, error) {
 	claims := Claims{
 		UserID: userID,
 		Role:   role,

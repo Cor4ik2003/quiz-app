@@ -3,6 +3,7 @@ package middleware
 import (
 	"auth-service/internal/utils"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -22,7 +23,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		claims := &utils.Claims{}
 
 		token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
-			return utils.GetSecret(), nil
+			return GetSecret(), nil
 		})
 		if err != nil || !token.Valid {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Невалидный токен"})
@@ -35,4 +36,15 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Set("role", claims.Role)
 		c.Next()
 	}
+}
+
+// GetSecret возвращает секретный ключ для подписи JWT
+func GetSecret() []byte {
+	// Можно также использовать os.Getenv или config-файл
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		// На dev-среде можно использовать дефолт
+		secret = "default_secret_key"
+	}
+	return []byte(secret)
 }
