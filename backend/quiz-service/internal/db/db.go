@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var DB *pgxpool.Pool // ✅ Глобальная переменная для пула соединений
+var DB *pgxpool.Pool 
 
 func Init() *pgxpool.Pool {
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
@@ -24,7 +24,7 @@ func Init() *pgxpool.Pool {
 		log.Fatalf("Failed to connect to DB: %v", err)
 	}
 
-	DB = pool // ✅ Сохраняем в глобальную переменную
+	DB = pool 
 	log.Println("Database connection initialized")
 	return pool
 }

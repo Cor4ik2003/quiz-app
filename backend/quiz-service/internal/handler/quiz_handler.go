@@ -1,11 +1,15 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
+	"internal/internal/db"
 	"internal/internal/dto"
 	"internal/internal/repository"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 func GetQuizzes(w http.ResponseWriter, r *http.Request) {
@@ -46,4 +50,44 @@ type Question struct {
 type Answer struct {
 	Text      string `json:"text"`
 	IsCorrect bool   `json:"is_correct"`
+}
+
+func DeleteQuizHandler(w http.ResponseWriter, r *http.Request) {
+
+	userID := r.Context().Value("user_id").(string)
+	quizID := mux.Vars(r)["id"]
+
+	// Проверка владельца
+	var createdBy string
+	err := db.DB.QueryRow(context.Background(), `SELECT created_by FROM quizzes WHERE id = $1`, quizID).Scan(&createdBy)
+	if err != nil {
+		http.Error(w, "Quiz not found", http.StatusNotFound)
+		return
+	}
+	if createdBy != userID {
+		http.Error(w, "Forbidden: not your quiz", http.StatusForbidden)
+		return
+	}
+
+	_, err = db.DB.Exec(context.Background(), `DELETE FROM quizzes WHERE id = $1`, quizID)
+	if err != nil {
+		http.Error(w, "Failed to delete quiz", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func GetQuizByIDHandler(w http.ResponseWriter, r *http.Request) {
+	quizID := mux.Vars(r)["id"]
+
+	quiz, err := repository.GetQuizByID(r.Context(), quizID)
+	if err != nil {
+		log.Println("Error in GetQuizByID:", err)
+		http.Error(w, "Quiz not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(quiz)
 }

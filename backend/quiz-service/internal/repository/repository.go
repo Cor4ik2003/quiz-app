@@ -10,6 +10,7 @@ type Quiz struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
+	CreatedBy   string `json:"created_by"`
 }
 
 func CreateQuizWithQuestions(title, description string, questions []dto.Question) (string, error) {
@@ -66,4 +67,16 @@ func GetAllQuizzes() ([]Quiz, error) {
 		quizzes = append(quizzes, q)
 	}
 	return quizzes, nil
+}
+
+func GetQuizByID(ctx context.Context, id string) (Quiz, error) {
+	var q Quiz
+	err := db.DB.QueryRow(ctx, `SELECT id, title, created_by FROM quizzes WHERE id = $1`, id).
+		Scan(&q.ID, &q.Title, &q.CreatedBy)
+	return q, err
+}
+
+func DeleteQuiz(ctx context.Context, id string) error {
+	_, err := db.DB.Exec(ctx, `DELETE FROM quizzes WHERE id = $1`, id)
+	return err
 }

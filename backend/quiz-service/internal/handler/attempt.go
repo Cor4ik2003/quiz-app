@@ -30,7 +30,7 @@ func SubmitAttemptHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Подсчитываем правильные ответы
+
 	correctCount := 0
 	for _, a := range req.Answers {
 		var isCorrect bool
