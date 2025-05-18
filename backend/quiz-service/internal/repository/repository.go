@@ -76,7 +76,39 @@ func GetQuizByID(ctx context.Context, id string) (Quiz, error) {
 	return q, err
 }
 
-func DeleteQuiz(ctx context.Context, id string) error {
-	_, err := db.DB.Exec(ctx, `DELETE FROM quizzes WHERE id = $1`, id)
+func DeleteQuiz(ctx context.Context, quizID string) error {
+	_, err := db.DB.Exec(ctx, `DELETE FROM quizzes WHERE id = $1`, quizID)
 	return err
+}
+
+func UpdateQuizTitle(ctx context.Context, quizID string, title string) error {
+	_, err := db.DB.Exec(ctx, `UPDATE quizzes SET title = $1 WHERE id = $2`, title, quizID)
+	return err
+}
+
+func DeleteQuestionsByQuizID(ctx context.Context, quizID string) error {
+	_, err := db.DB.Exec(ctx, `DELETE FROM questions WHERE quiz_id = $1`, quizID)
+	return err
+}
+
+func AddQuestionsWithAnswers(ctx context.Context, quizID string, questions []dto.QuestionInput) error {
+	for _, q := range questions {
+		var questionID string
+		err := db.DB.QueryRow(ctx,
+			`INSERT INTO questions (quiz_id, text) VALUES ($1, $2) RETURNING id`,
+			quizID, q.Text).Scan(&questionID)
+		if err != nil {
+			return err
+		}
+
+		for _, a := range q.Answers {
+			_, err := db.DB.Exec(ctx,
+				`INSERT INTO answers (question_id, text, is_correct) VALUES ($1, $2, $3)`,
+				questionID, a.Text, a.IsCorrect)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

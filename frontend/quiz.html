@@ -1,47 +1,314 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Прохождение теста</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz App</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 0;
+    }
+    .header {
+      background: #007bff;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .container {
+      display: flex;
+      height: calc(100vh - 50px);
+    }
+    .sidebar {
+      width: 300px;
+      background: #f9f9f9;
+      padding: 20px;
+      border-right: 1px solid #ccc;
+      overflow-y: auto;
+    }
+    .quiz-item {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .quiz-item h4 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+    }
+    .quiz-item button {
+      margin: 3px 5px 0 0;
+      padding: 6px 10px;
+      font-size: 14px;
+    }
+    .main {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .question-block, .answer-block {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+    }
+    input, textarea {
+      padding: 8px;
+      margin: 5px 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .remove-btn {
+      background-color: #dc3545;
+      margin-left: 10px;
+    }
+    .clear-btn {
+      background-color: #6c757d;
+      margin-left: 10px;
+    }
+  </style>
 </head>
-<body class="bg-light">
-  <div class="container mt-5">
-    <h2 id="quiz-title">Загрузка викторины...</h2>
-    <div id="questions" class="mt-4"></div>
+<body>
+  <div class="header">
+    <h1>Quiz App</h1>
+    <button onclick="showCreatePanel()">Создать квиз</button>
   </div>
 
-  <script>
-    const API_BASE = "http://localhost:8082"; // или куда у тебя отправляются запросы
+  <div class="container">
+    <div class="sidebar">
+      <h2>Доступные квизы</h2>
+      <div id="quiz-list"></div>
+    </div>
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const quizId = urlParams.get("id");
+    <div class="main">
+      <div id="view-panel"></div>
+      <div id="create-panel" style="display: none;">
+        <h2>Создание / Редактирование квиза</h2>
+        <input id="quiz-title" placeholder="Название квиза" />
+        <textarea id="quiz-description" placeholder="Описание квиза"></textarea>
+        <div id="questions"></div>
+        <button onclick="addQuestion()">+ Вопрос</button>
+        <button onclick="submitQuiz()">Сохранить</button>
+        <button class="clear-btn" onclick="clearForm()">Очистить форму</button>
+      </div>
+    </div>
+  </div>
 
-    fetch(`${API_BASE}/quizzes/${quizId}`)
+<script>
+  const API = "http://localhost:8082";
+  let editingQuizId = null;
+
+  function fetchQuizzes() {
+    fetch(`${API}/quizzes`)
+      .then(res => res.json())
+      .then(data => {
+        const list = document.getElementById("quiz-list");
+        list.innerHTML = "";
+        data.forEach(q => {
+          const div = document.createElement("div");
+          div.className = "quiz-item";
+          div.innerHTML = `
+            <h4>${q.title}</h4>
+            <button onclick="loadQuiz('${q.id}')">Пройти</button>
+            <button onclick="startEditQuiz('${q.id}')">Редактировать</button>
+            <button class="remove-btn" onclick="deleteQuiz('${q.id}')">Удалить</button>
+          `;
+          list.appendChild(div);
+        });
+      });
+  }
+  window.onload = () => {
+    fetchQuizzes();
+  };
+  function showCreatePanel() {
+    document.getElementById("view-panel").style.display = "none";
+    document.getElementById("create-panel").style.display = "block";
+    clearForm();
+    editingQuizId = null;
+  }
+  function clearForm() {
+    document.getElementById("quiz-title").value = "";
+    document.getElementById("quiz-description").value = "";
+    document.getElementById("questions").innerHTML = "";
+  }
+
+  function addQuestion() {
+    const container = document.getElementById("questions");
+    const qBlock = document.createElement("div");
+    qBlock.className = "question-block";
+    const questionId = Math.random().toString(36).substring(2, 8);
+    qBlock.innerHTML = `
+      <input placeholder="Текст вопроса" class="question-text" />
+      <div class="answers"></div>
+      <button onclick="addAnswer(this, '${questionId}')">+ Ответ</button>
+      <button class="remove-btn" onclick="this.parentElement.remove()">Удалить вопрос</button>
+    `;
+    container.appendChild(qBlock);
+    for (let i = 0; i < 2; i++) {
+      addAnswer(qBlock.querySelector("button"), questionId);
+    }
+  }
+
+  function addAnswer(button, groupName) {
+    const parent = button.closest(".question-block");
+    const answersContainer = parent.querySelector(".answers");
+    const aBlock = document.createElement("div");
+    aBlock.className = "answer-block";
+    aBlock.innerHTML = `
+      <input type="radio" name="correct-${groupName}" class="is-correct" />
+      <input type="text" class="answer-text" placeholder="Ответ" />
+      <button class="remove-btn" onclick="this.parentElement.remove()">Удалить</button>
+    `;
+    answersContainer.appendChild(aBlock);
+  }
+
+  function loadQuiz(id) {
+    fetch(`${API}/quizzes/${id}/full`)
       .then(res => res.json())
       .then(quiz => {
-        document.getElementById("quiz-title").textContent = quiz.title;
+        const panel = document.getElementById("view-panel");
+        panel.style.display = "block";
+        document.getElementById("create-panel").style.display = "none";
+        panel.innerHTML = `<h2>${quiz.title}</h2><p>${quiz.description || ""}</p>`;
 
-        const questionsContainer = document.getElementById("questions");
-        quiz.questions.forEach((q, index) => {
-          const div = document.createElement("div");
-          div.className = "mb-4";
-          div.innerHTML = `
-            <h5>${index + 1}. ${q.text}</h5>
-            ${q.answers.map(a => `
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="q${index}" value="${a.id}">
-                <label class="form-check-label">${a.text}</label>
-              </div>
-            `).join("")}
-          `;
-          questionsContainer.appendChild(div);
+        quiz.questions.forEach((q, i) => {
+          const block = document.createElement("div");
+          block.className = "question-block";
+          block.innerHTML = `<p><strong>${q.text}</strong></p>`;
+          q.answers.forEach((a, j) => {
+            block.innerHTML += `
+              <label><input type="radio" name="q${i}" value="${j}"> ${a.text}</label><br/>
+            `;
+          });
+          panel.appendChild(block);
         });
-      })
-      .catch(err => {
-        console.error(err);
-        document.getElementById("quiz-title").textContent = "Ошибка загрузки викторины.";
+
+        const btn = document.createElement("button");
+        btn.innerText = "Завершить";
+        btn.onclick = () => {
+          let score = 0;
+          quiz.questions.forEach((q, i) => {
+            const selected = document.querySelector(`input[name='q${i}']:checked`);
+            if (selected) {
+              const index = parseInt(selected.value);
+              if (q.answers[index].is_correct) score++;
+            }
+          });
+          alert(`Ваш результат: ${score}/${quiz.questions.length}`);
+        };
+        panel.appendChild(btn);
       });
-  </script>
+  }
+  function submitQuiz() {
+    const title = document.getElementById("quiz-title").value.trim();
+    const description = document.getElementById("quiz-description").value.trim();
+    if (!title) return alert("Введите название квиза");
+
+    const questions = [];
+    let valid = true;
+
+    document.querySelectorAll(".question-block").forEach(q => {
+      const questionText = q.querySelector(".question-text").value.trim();
+      if (!questionText) valid = false;
+
+      const answers = [];
+      const answerBlocks = q.querySelectorAll(".answer-block");
+
+      answerBlocks.forEach(a => {
+        const answerText = a.querySelector(".answer-text").value.trim();
+        const isCorrect = a.querySelector(".is-correct").checked;
+        if (!answerText) valid = false;
+        answers.push({ text: answerText, is_correct: isCorrect });
+      });
+
+      if (answers.length < 2 || !answers.some(a => a.is_correct)) valid = false;
+
+      questions.push({ text: questionText, answers });
+    });
+
+    if (!valid || questions.length === 0)
+      return alert("Пожалуйста, заполните все поля, добавьте хотя бы 1 вопрос и правильный ответ.");
+
+    const payload = { title, description, questions };
+    const url = editingQuizId ? `${API}/quizzes/${editingQuizId}` : `${API}/quizzes`;
+    const method = editingQuizId ? "PUT" : "POST";
+
+    fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Ошибка при сохранении квиза");
+      alert(editingQuizId ? "Квиз обновлён" : "Квиз создан");
+      editingQuizId = null;
+      clearForm();
+      fetchQuizzes();
+      showCreatePanel();
+    })
+    .catch(() => alert("Ошибка при сохранении квиза"));
+  }
+
+  function startEditQuiz(id) {
+    editingQuizId = id;
+    fetch(`${API}/quizzes/${id}/full`)
+      .then(res => res.json())
+      .then(quiz => {
+        showCreatePanel();
+        document.getElementById("quiz-title").value = quiz.title;
+        document.getElementById("quiz-description").value = quiz.description || "";
+        const container = document.getElementById("questions");
+        container.innerHTML = "";
+
+        quiz.questions.forEach(q => {
+          const qBlock = document.createElement("div");
+          qBlock.className = "question-block";
+          const questionId = Math.random().toString(36).substring(2, 8);
+
+          const answersHtml = q.answers.map(a => `
+            <div class="answer-block">
+              <input type="radio" name="correct-${questionId}" class="is-correct" ${a.is_correct ? "checked" : ""} />
+              <input type="text" class="answer-text" value="${a.text}" />
+              <button class="remove-btn" onclick="this.parentElement.remove()">Удалить</button>
+            </div>
+          `).join("");
+
+          qBlock.innerHTML = `
+            <input placeholder="Текст вопроса" class="question-text" value="${q.text}" />
+            <div class="answers">${answersHtml}</div>
+            <button onclick="addAnswer(this, '${questionId}')">+ Ответ</button>
+            <button class="remove-btn" onclick="this.parentElement.remove()">Удалить вопрос</button>
+          `;
+
+          container.appendChild(qBlock);
+        });
+      });
+  }
+  function deleteQuiz(id) {
+    fetch(`${API}/quizzes/${id}`, { method: "DELETE" })
+      .then(() => {
+        alert("Квиз удалён");
+        fetchQuizzes();
+      })
+      .catch(() => alert("Ошибка при удалении квиза"));
+  }
+</script>
 </body>
 </html>

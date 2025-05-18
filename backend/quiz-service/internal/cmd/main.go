@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 
 	"internal/internal/db"
 	"internal/internal/handler"
@@ -23,11 +24,22 @@ func main() {
 
 	r.Handle("/quizzes", middleware.AuthMiddleware(http.HandlerFunc(handler.CreateQuizHandler))).Methods(http.MethodPost)
 
+	r.Handle("/quizzes/{id}", middleware.AuthMiddleware(http.HandlerFunc(handler.UpdateQuizHandler))).Methods(http.MethodPut)
+
 	r.Handle("/quizzes/{id}", middleware.AuthMiddleware(http.HandlerFunc(handler.DeleteQuizHandler))).Methods(http.MethodDelete)
 
 	r.Handle("/quizzes/{id}/attempt", middleware.AuthMiddleware(http.HandlerFunc(handler.SubmitAttemptHandler))).Methods(http.MethodPost)
+
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"}, // Или явно указать: http://localhost:5500
+		AllowedMethods:   []string{"GET", "POST", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type"},
+		AllowCredentials: true,
+	})
 	//r.Handle("/attempts", middleware.AuthMiddleware(http.HandlerFunc(handler.GetUserAttemptsHandler))).Methods(http.MethodGet)
 
+	handlerWithCors := c.Handler(r)
+
 	log.Println("Quiz service started on :8082")
-	log.Fatal(http.ListenAndServe(":8082", r))
+	log.Fatal(http.ListenAndServe(":8082", handlerWithCors))
 }

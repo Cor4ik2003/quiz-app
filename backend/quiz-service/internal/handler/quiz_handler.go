@@ -3,9 +3,9 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"internal/internal/db"
 	"internal/internal/dto"
 	"internal/internal/repository"
+	"internal/internal/service"
 	"log"
 	"net/http"
 
@@ -52,31 +52,31 @@ type Answer struct {
 	IsCorrect bool   `json:"is_correct"`
 }
 
-func DeleteQuizHandler(w http.ResponseWriter, r *http.Request) {
+// func DeleteQuizHandler(w http.ResponseWriter, r *http.Request) {
 
-	userID := r.Context().Value("user_id").(string)
-	quizID := mux.Vars(r)["id"]
+// 	userID := r.Context().Value("user_id").(string)
+// 	quizID := mux.Vars(r)["id"]
 
-	// Проверка владельца
-	var createdBy string
-	err := db.DB.QueryRow(context.Background(), `SELECT created_by FROM quizzes WHERE id = $1`, quizID).Scan(&createdBy)
-	if err != nil {
-		http.Error(w, "Quiz not found", http.StatusNotFound)
-		return
-	}
-	if createdBy != userID {
-		http.Error(w, "Forbidden: not your quiz", http.StatusForbidden)
-		return
-	}
+// 	// Проверка владельца
+// 	var createdBy string
+// 	err := db.DB.QueryRow(context.Background(), `SELECT created_by FROM quizzes WHERE id = $1`, quizID).Scan(&createdBy)
+// 	if err != nil {
+// 		http.Error(w, "Quiz not found", http.StatusNotFound)
+// 		return
+// 	}
+// 	if createdBy != userID {
+// 		http.Error(w, "Forbidden: not your quiz", http.StatusForbidden)
+// 		return
+// 	}
 
-	_, err = db.DB.Exec(context.Background(), `DELETE FROM quizzes WHERE id = $1`, quizID)
-	if err != nil {
-		http.Error(w, "Failed to delete quiz", http.StatusInternalServerError)
-		return
-	}
+// 	_, err = db.DB.Exec(context.Background(), `DELETE FROM quizzes WHERE id = $1`, quizID)
+// 	if err != nil {
+// 		http.Error(w, "Failed to delete quiz", http.StatusInternalServerError)
+// 		return
+// 	}
 
-	w.WriteHeader(http.StatusNoContent)
-}
+// 	w.WriteHeader(http.StatusNoContent)
+// }
 
 func GetQuizByIDHandler(w http.ResponseWriter, r *http.Request) {
 	quizID := mux.Vars(r)["id"]
@@ -90,4 +90,36 @@ func GetQuizByIDHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(quiz)
+}
+
+func DeleteQuizHandler(w http.ResponseWriter, r *http.Request) {
+	quizID := mux.Vars(r)["id"]
+
+	err := service.DeleteQuiz(context.Background(), quizID)
+	if err != nil {
+		http.Error(w, "Failed to delete quiz", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func UpdateQuizHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	quizID := vars["id"]
+
+	var input dto.QuizInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "Invalid input", http.StatusBadRequest)
+		return
+	}
+
+	err := service.UpdateQuiz(r.Context(), quizID, input)
+	if err != nil {
+		log.Println("Update error:", err)
+		http.Error(w, "Failed to update quiz", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

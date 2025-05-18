@@ -1,63 +1,57 @@
-const API_BASE = "http://localhost:8081"; // измени на свой URL
+const API_URL = "http://localhost:8082"; // измени порт, если у тебя другой
 
-function login() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+async function createQuiz() {
+  console.log("Кнопка нажата");
 
-  fetch(`${API_BASE}/login`, {
+  const title = document.getElementById("title").value;
+  if (!title) {
+    alert("Введите название квиза");
+    return;
+  }
+
+  const response = await fetch(`${API_URL}/quizzes`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password })
-  })
-    .then(res => {
-      if (!res.ok) throw new Error("Неверный логин или пароль");
-      return res.json();
-    })
-    .then(data => {
-      localStorage.setItem("token", data.token);
-      showQuizzes();
-    })
-    .catch(err => alert(err.message));
-}
-
-function logout() {
-  localStorage.removeItem("token");
-  document.getElementById("quiz-section").classList.add("d-none");
-  document.getElementById("login-section").classList.remove("d-none");
-}
-
-function showQuizzes() {
-  document.getElementById("login-section").classList.add("d-none");
-  document.getElementById("quiz-section").classList.remove("d-none");
-
-  fetch(`${API_BASE}/quizzes`, {
     headers: {
-      Authorization: `Bearer ${localStorage.getItem("token")}`
-    }
-  })
-    .then(res => res.json())
-    .then(data => {
-      const container = document.getElementById("quizzes");
-      container.innerHTML = "";
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ title: title })
+  });
 
-      data.forEach(quiz => {
-        const col = document.createElement("div");
-        col.className = "col-12 col-md-6";
-
-        col.innerHTML = `
-          <div class="card shadow-sm h-100">
-            <div class="card-body">
-              <h5 class="card-title">${quiz.title}</h5>
-              <p class="card-text">${quiz.description || "Нет описания"}</p>
-              <button class="btn btn-primary" onclick="startQuiz('${quiz.id}')">Пройти</button>
-            </div>
-          </div>
-        `;
-        container.appendChild(col);
-      });
-    })
-    .catch(err => {
-      alert("Ошибка при получении викторин");
-      console.error(err);
-    });
+  if (response.ok) {
+    alert("Квиз создан!");
+    fetchQuizzes(); // обновим список
+  } else {
+    const text = await response.text();
+    alert("Ошибка при создании квиза: " + text);
+  }
 }
+
+async function fetchQuizzes() {
+  const res = await fetch(`${API_URL}/quizzes`);
+  const quizzes = await res.json();
+  const list = document.getElementById("quiz-list");
+  list.innerHTML = "";
+  quizzes.forEach(q => {
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <strong>${q.title}</strong>
+      <button onclick="deleteQuiz('${q.id}')">Delete</button>
+    `;
+    list.appendChild(li);
+  });
+}
+
+async function deleteQuiz(id) {
+  const res = await fetch(`${API_URL}/quizzes/${id}`, {
+    method: "DELETE"
+  });
+
+  if (res.ok) {
+    alert("Удалено");
+    fetchQuizzes();
+  } else {
+    alert("Не удалось удалить квиз");
+  }
+}
+
+fetchQuizzes();

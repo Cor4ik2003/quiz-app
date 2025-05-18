@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"internal/internal/dto"
 	"internal/internal/repository"
 )
 
@@ -12,20 +13,26 @@ var (
 	ErrDeleteFailed = errors.New("failed to delete quiz")
 )
 
-func DeleteQuiz(ctx context.Context, quizID, userID string) error {
-	quiz, err := repository.GetQuizByID(ctx, quizID)
+var ErrQuizNotFound = errors.New("quiz not found")
+var ErrForbidden = errors.New("not your quiz")
+
+func DeleteQuiz(ctx context.Context, quizID string) error {
+	return repository.DeleteQuiz(ctx, quizID)
+}
+
+func UpdateQuiz(ctx context.Context, quizID string, input dto.QuizInput) error {
+	// удалить старые вопросы и ответы
+	err := repository.DeleteQuestionsByQuizID(ctx, quizID)
 	if err != nil {
-		return ErrNotFound
+		return err
 	}
 
-	if quiz.CreatedBy != userID {
-		return ErrNotOwner
-	}
-
-	err = repository.DeleteQuiz(ctx, quizID)
+	// обновить название
+	err = repository.UpdateQuizTitle(ctx, quizID, input.Title)
 	if err != nil {
-		return ErrDeleteFailed
+		return err
 	}
 
-	return nil
+	// сохранить новые вопросы и ответы
+	return repository.AddQuestionsWithAnswers(ctx, quizID, input.Questions)
 }
