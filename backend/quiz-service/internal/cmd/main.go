@@ -22,6 +22,9 @@ func main() {
 	r.HandleFunc("/quizzes/{id}", handler.GetQuizByIDHandler).Methods(http.MethodGet)
 	r.HandleFunc("/quizzes/{id}/full", handler.GetFullQuiz).Methods(http.MethodGet)
 
+	r.Handle("/register", handler.RegisterHandler)
+	r.Handle("/login", handler.LoginHandler)
+
 	r.Handle("/quizzes", middleware.AuthMiddleware(http.HandlerFunc(handler.CreateQuizHandler))).Methods(http.MethodPost)
 
 	r.Handle("/quizzes/{id}", middleware.AuthMiddleware(http.HandlerFunc(handler.UpdateQuizHandler))).Methods(http.MethodPut)
