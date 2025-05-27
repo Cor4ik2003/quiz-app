@@ -42,7 +42,7 @@ func LoginUser(email, password string) (string, error) {
 	}
 
 	// Генерация токена
-	token, err := utils.GenerateToken(user.ID.String(), user.Role)
+	token, err := utils.GenerateToken(user.ID.String(), user.Role, user.Email)
 
 	if err != nil {
 		return "", fmt.Errorf("ошибка генерации токена: %w", err)

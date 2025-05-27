@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Вход</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <form id="login-form">
+    <h2>Вход</h2>
+    <input type="email" id="email" placeholder="Email" required />
+    <input type="password" id="password" placeholder="Пароль" required />
+    <button type="submit">Войти</button>
+    <div class="link">
+      Нет аккаунта? <a href="register.html">Зарегистрироваться</a>
+    </div>
+  </form>
+
+  <script>
+    document.getElementById("login-form").addEventListener("submit", async function(e) {
+      e.preventDefault();
+
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      const res = await fetch("http://localhost:8082/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+
+      if (res.ok) {
+  const data = await res.json();
+  localStorage.setItem("token", data.token);
+  document.getElementById("login-modal").style.display = "flex";
+  setTimeout(() => {
+    window.location.href = "quiz_modal_timer.html";
+  }, 1500);
+} else {
+        const error = await res.text();
+        alert("Ошибка входа: " + error);
+      }
+    });
+  </script>
+
+<div id="login-modal" style="
+display: none;
+position: fixed;
+top: 0;
+left: 0;
+width: 100vw;
+height: 100vh;
+background: rgba(0, 0, 0, 0.4);
+z-index: 9999;
+align-items: center;
+justify-content: center;
+">
+<div style="
+  background: white;
+  padding: 24px 32px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  font-family: 'Segoe UI', sans-serif;
+  text-align: center;
+  animation: slideUp 0.3s ease-in-out;
+">
+  <h3 style="margin: 0 0 10px;">✅ Вход выполнен</h3>
+  <p style="margin-bottom: 16px;">Сейчас вы будете перенаправлены...</p>
+</div>
+</div>
+</body>
+</html>

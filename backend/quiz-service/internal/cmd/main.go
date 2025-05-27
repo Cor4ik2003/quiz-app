@@ -22,8 +22,10 @@ func main() {
 	r.HandleFunc("/quizzes/{id}", handler.GetQuizByIDHandler).Methods(http.MethodGet)
 	r.HandleFunc("/quizzes/{id}/full", handler.GetFullQuiz).Methods(http.MethodGet)
 
-	r.Handle("/register", handler.RegisterHandler)
-	r.Handle("/login", handler.LoginHandler)
+	r.Handle("/results", middleware.AuthMiddleware(http.HandlerFunc(handler.SubmitResultHandler))).Methods(http.MethodPost)
+
+	r.Handle("/register", http.HandlerFunc(handler.RegisterHandler)).Methods(http.MethodPost)
+	r.Handle("/login", http.HandlerFunc(handler.LoginHandler)).Methods(http.MethodPost)
 
 	r.Handle("/quizzes", middleware.AuthMiddleware(http.HandlerFunc(handler.CreateQuizHandler))).Methods(http.MethodPost)
 
@@ -35,7 +37,7 @@ func main() {
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"}, // Или явно указать: http://localhost:5500
-		AllowedMethods:   []string{"GET", "POST", "DELETE", "OPTIONS"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
 	})

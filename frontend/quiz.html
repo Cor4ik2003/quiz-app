@@ -1,94 +1,153 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quiz App</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
   <style>
-    body {
-      font-family: sans-serif;
-      background: #f0f2f5;
-      margin: 0;
-      padding: 0;
-    }
-    .header {
-      background: #007bff;
-      color: white;
-      padding: 10px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .container {
-      display: flex;
-      height: calc(100vh - 50px);
-    }
-    .sidebar {
-      width: 300px;
-      background: #f9f9f9;
-      padding: 20px;
-      border-right: 1px solid #ccc;
-      overflow-y: auto;
-    }
-    .quiz-item {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      padding: 10px;
-      margin-bottom: 10px;
-    }
-    .quiz-desc {
-      font-size: 13px;
-      margin: 0 0 5px 0;
-      color: #555;
-    }
-    .quiz-item button {
-      display: inline-block;
-      margin: 4px 4px 0 0;
-    }
-    .main {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-    }
-    button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      padding: 10px;
-      margin-top: 10px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    .question-block, .answer-block {
-      background: #f9f9f9;
-      border: 1px solid #ddd;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 5px;
-    }
-    input, textarea {
-      padding: 8px;
-      margin: 5px 0;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    .remove-btn {
-      background-color: #dc3545;
-      margin-left: 10px;
-    }
-    .clear-btn {
-      background-color: #6c757d;
-      margin-left: 10px;
-    }
+   body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #f4f6f8;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background: #ffffff;
+  color: #1a1a1a;
+  padding: 15px 30px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 320px;
+  background: #ffffff;
+  border-right: 1px solid #e0e0e0;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.main {
+  flex: 1;
+  background: #f9fafb;
+  padding: 30px;
+  overflow-y: auto;
+}
+
+.quiz-item {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 15px 18px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+}
+
+.quiz-item h4 {
+  margin: 0 0 5px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #333;
+}
+
+.quiz-desc {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.quiz-item button {
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+
+button {
+  background-color: #3f51b5;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background-color: #303f9f;
+}
+
+.remove-btn {
+  background-color: #e53935;
+}
+
+.remove-btn:hover {
+  background-color: #c62828;
+}
+
+.clear-btn {
+  background-color: #757575;
+}
+
+.clear-btn:hover {
+  background-color: #616161;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  background: #fff;
+}
+
+.question-block, .answer-block {
+  background: #f1f3f4;
+  border: 1px solid #ccc;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+}
+
+.user-info {
+  font-size: 14px;
+  color: #555;
+  margin-right: 15px;
+}
   </style>
 </head>
 <body>
   <div class="header">
     <h1>Quiz App</h1>
-    <button onclick="showCreatePanel()">Создать квиз</button>
+    <div>
+      <span id="user-info" class="user-info"></span>
+      <button id="create-btn" style="display: none;">Создать квиз</button>
+      <button onclick="logout()">Выйти</button>
+    </div>
   </div>
 
   <div class="container">
@@ -102,8 +161,7 @@
       <div id="create-panel" style="display: none;">
         <h2>Создание / Редактирование квиза</h2>
         <input id="quiz-title" placeholder="Название квиза" />
-        
-<textarea id="quiz-description" placeholder="Описание квиза"></textarea>
+        <textarea id="quiz-description" placeholder="Описание квиза"></textarea>
         <div id="questions"></div>
         <button onclick="addQuestion()">+ Вопрос</button>
         <button onclick="submitQuiz()">Сохранить</button>
@@ -111,47 +169,26 @@
       </div>
     </div>
   </div>
-
 <script>
   const API = "http://localhost:8082";
   let editingQuizId = null;
+  let userRole = null;
 
-  function fetchQuizzes() {
-    fetch(`${API}/quizzes`)
-      .then(res => res.json())
-      .then(data => {
-        const list = document.getElementById("quiz-list");
-        list.innerHTML = "";
-        data.forEach(q => {
-          const div = document.createElement("div");
-          div.className = "quiz-item";
-          div.innerHTML = `
-            <h4>${q.title}</h4>
-            <p class="quiz-desc">${q.description?.substring(0, 100) || ''}</p>
-            <button onclick="loadQuiz('${q.id}')">Пройти</button>
-            <button onclick="startEditQuiz('${q.id}')">Редактировать</button>
-            <button class="remove-btn" onclick="deleteQuiz('${q.id}')">Удалить</button>
-          `;
-          list.appendChild(div);
-        });
-      });
+  function logout() {
+    localStorage.removeItem("token");
+    window.location.href = "login.html";
   }
-  window.onload = () => {
-    fetchQuizzes();
-  };
+
   function showCreatePanel() {
     document.getElementById("view-panel").style.display = "none";
     document.getElementById("create-panel").style.display = "block";
     clearForm();
     editingQuizId = null;
   }
-  function clearForm() {
-        document.getElementById("quiz-title").value = "";
-    const descriptionField = document.getElementById("quiz-description");
-    if (descriptionField) descriptionField.value = "";
 
-    const codeField = document.getElementById("quiz-code");
-    if (codeField) codeField.value = "";
+  function clearForm() {
+    document.getElementById("quiz-title").value = "";
+    document.getElementById("quiz-description").value = "";
     document.getElementById("questions").innerHTML = "";
   }
 
@@ -183,6 +220,29 @@
       <button class="remove-btn" onclick="this.parentElement.remove()">Удалить</button>
     `;
     answersContainer.appendChild(aBlock);
+  }
+
+  function fetchQuizzes() {
+    fetch(`${API}/quizzes`)
+      .then(res => res.json())
+      .then(data => {
+        const list = document.getElementById("quiz-list");
+        list.innerHTML = "";
+        data.forEach(q => {
+          const div = document.createElement("div");
+          div.className = "quiz-item";
+          div.innerHTML = `
+            <h4>${q.title}</h4>
+            <p class="quiz-desc">${q.description?.substring(0, 100) || ''}</p>
+            <button onclick="loadQuiz('${q.id}')">Пройти</button>
+            ${userRole === 'teacher' ? `
+              <button onclick="startEditQuiz('${q.id}')">Редактировать</button>
+              <button class="remove-btn" onclick="deleteQuiz('${q.id}')">Удалить</button>
+            ` : ''}
+          `;
+          list.appendChild(div);
+        });
+      });
   }
 
   function loadQuiz(id) {
@@ -222,33 +282,25 @@
         panel.appendChild(btn);
       });
   }
+
   function submitQuiz() {
-    const titleInput = document.getElementById("quiz-title");
-    if (!titleInput) return alert("Поле заголовка не найдено");
-    const title = titleInput.value.trim();
-    const descriptionInput = document.getElementById("quiz-description");
-    if (!descriptionInput) return alert("Поле описания не найдено");
-    const description = descriptionInput.value.trim();
+    const title = document.getElementById("quiz-title").value.trim();
+    const description = document.getElementById("quiz-description").value.trim();
     if (!title) return alert("Введите название квиза");
 
     const questions = [];
     let valid = true;
 
     document.querySelectorAll(".question-block").forEach(q => {
-      const questionTextInput = q.querySelector(".question-text");
-      const questionText = questionTextInput ? questionTextInput.value.trim() : "";
+      const questionText = q.querySelector(".question-text").value.trim();
       if (!questionText) valid = false;
 
       const answers = [];
       const answerBlocks = q.querySelectorAll(".answer-block");
 
       answerBlocks.forEach(a => {
-        const textInput = a.querySelector(".answer-text");
-        const correctInput = a.querySelector(".is-correct");
-        if (!textInput || !correctInput) return;
-
-        const answerText = textInput.value.trim();
-        const isCorrect = correctInput.checked;
+        const answerText = a.querySelector(".answer-text").value.trim();
+        const isCorrect = a.querySelector(".is-correct").checked;
         if (!answerText) valid = false;
         answers.push({ text: answerText, is_correct: isCorrect });
       });
@@ -267,7 +319,10 @@
 
     fetch(url, {
       method,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
+      },
       body: JSON.stringify(payload)
     })
     .then(res => {
@@ -316,14 +371,36 @@
         });
       });
   }
+
   function deleteQuiz(id) {
-    fetch(`${API}/quizzes/${id}`, { method: "DELETE" })
-      .then(() => {
-        alert("Квиз удалён");
-        fetchQuizzes();
-      })
-      .catch(() => alert("Ошибка при удалении квиза"));
+    fetch(`${API}/quizzes/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
+      }
+    })
+    .then(() => {
+      alert("Квиз удалён");
+      fetchQuizzes();
+    })
+    .catch(() => alert("Ошибка при удалении квиза"));
   }
+
+  window.onload = () => {
+    const token = localStorage.getItem("token");
+    if (!token) return window.location.href = "login.html";
+
+    const decoded = jwt_decode(token);
+    userRole = decoded.role;
+    document.getElementById("user-info").innerText = `Вы вошли как: ${decoded.email} (${decoded.role})`;
+
+    if (userRole === "teacher") {
+      document.getElementById("create-btn").style.display = "inline-block";
+      document.getElementById("create-btn").onclick = showCreatePanel;
+    }
+
+    fetchQuizzes();
+  };
 </script>
 </body>
 </html>

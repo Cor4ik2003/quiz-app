@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Регистрация</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <form id="register-form">
+    <h2>Регистрация</h2>
+    <input type="email" id="email" placeholder="Email" required />
+    <input type="password" id="password" placeholder="Пароль (мин. 8 символов)" required minlength="8" />
+    <div id="password-error" class="error" style="display: none;">Пароль должен содержать не менее 8 символов.</div>
+    <select id="role">
+      <option value="student">Студент</option>
+      <option value="teacher">Преподаватель</option>
+    </select>
+    <button type="submit">Зарегистрироваться</button>
+    <div class="link">
+      Уже есть аккаунт? <a href="login.html">Войти</a>
+    </div>
+  </form>
+
+  <script>
+    document.getElementById("register-form").addEventListener("submit", async function(e) {
+      e.preventDefault();
+
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const role = document.getElementById("role").value;
+      const passwordError = document.getElementById("password-error");
+
+      if (password.length < 8) {
+        passwordError.style.display = "block";
+        return;
+      } else {
+        passwordError.style.display = "none";
+      }
+
+      try {
+        const res = await fetch("http://localhost:8082/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, role })
+        });
+
+        if (res.ok) {
+          alert("Регистрация прошла успешно!");
+          window.location.href = "quiz_modal_timer.html";
+        } else {
+          const error = await res.text();
+          alert("Ошибка регистрации: " + error);
+        }
+      } catch (err) {
+        alert("Ошибка подключения к серверу: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>

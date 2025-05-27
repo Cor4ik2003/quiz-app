@@ -1,35 +1,36 @@
 package repository
 
 import (
-	"database/sql"
-	"errors"
-	models "internal/internal/model"
+	"context"
+	"fmt"
+	"internal/internal/db"
+	model "internal/internal/model"
 )
 
-type UserRepository struct {
-	DB *sql.DB
+func CreateUser(user *model.User) error {
+	query := `
+		INSERT INTO users (id, email, password_hash, role, created_at)
+		VALUES (gen_random_uuid(), $1, $2, $3, NOW())
+		RETURNING id, created_at
+	`
+	return db.DB.QueryRow(context.Background(), query, user.Email, user.Password, user.Role).
+		Scan(&user.ID, &user.CreatedAt)
 }
 
-func NewUserRepository(db *sql.DB) *UserRepository {
-	return &UserRepository{DB: db}
-}
+func GetUserByEmail(email string) (*model.User, error) {
+	var user model.User
+	query := `SELECT id, email, password_hash, role, created_at FROM users WHERE email = $1`
 
-// Создание пользователя
-func (r *UserRepository) CreateUser(user *models.User) error {
-	_, err := r.DB.Exec("INSERT INTO users (email, password, created_at) VALUES ($1, $2, NOW())",
-		user.Email, user.Password)
-	return err
-}
+	err := db.DB.QueryRow(context.Background(), query, email).Scan(
+		&user.ID,
+		&user.Email,
+		&user.Password,
+		&user.Role,
+		&user.CreatedAt,
+	)
 
-// Получение пользователя по email
-func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
-	user := &models.User{}
-	err := r.DB.QueryRow("SELECT id, email, password, created_at FROM users WHERE email = $1", email).
-		Scan(&user.ID, &user.Email, &user.Password, &user.CreatedAt)
-
-	if err == sql.ErrNoRows {
-		return nil, errors.New("пользователь не найден")
+	if err != nil {
+		return nil, fmt.Errorf("пользователь не найден: %w", err)
 	}
-
-	return user, err
+	return &user, nil
 }
